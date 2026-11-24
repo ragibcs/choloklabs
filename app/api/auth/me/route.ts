@@ -15,6 +15,7 @@ export async function GET() {
 const updateProfileSchema = z.object({
   fullName: z.string().min(2).max(120).optional(),
   phone: z.string().max(40).optional(),
+  avatarUrl: z.string().max(5000000).optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(8).optional(),
 });
@@ -46,15 +47,27 @@ export async function PATCH(req: Request) {
       await logAudit(user.id, "user.password_changed", "user", user.id);
     }
 
-    if (parsed.data.fullName !== undefined || parsed.data.phone !== undefined) {
+    if (parsed.data.fullName !== undefined || parsed.data.phone !== undefined || parsed.data.avatarUrl !== undefined) {
       await query(
         `UPDATE users
          SET full_name = COALESCE($1, full_name),
              phone = COALESCE($2, phone),
+             avatar_url = COALESCE($3, avatar_url),
              updated_at = NOW()
-         WHERE id = $3`,
-        [parsed.data.fullName?.trim() || null, parsed.data.phone?.trim() ?? null, user.id]
+         WHERE id = $4`,
+        [
+          parsed.data.fullName?.trim() || null,
+          parsed.data.phone?.trim() ?? null,
+          parsed.data.avatarUrl !== undefined ? parsed.data.avatarUrl.trim() : null,
+          user.id,
+        ]
       );
+      if (parsed.data.avatarUrl !== undefined) {
+        await query(
+          `UPDATE employees SET avatar_url = $1, updated_at = NOW() WHERE user_id = $2`,
+          [parsed.data.avatarUrl.trim(), user.id]
+        );
+      }
       await logAudit(user.id, "user.profile_updated", "user", user.id);
     }
 

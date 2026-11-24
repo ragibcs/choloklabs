@@ -24,7 +24,7 @@ async function getTeamTreeMembers(): Promise<TeamMemberNode[]> {
          e.employee_code,
          u.full_name,
          u.email,
-         COALESCE(u.avatar_url, '') AS avatar_url,
+         COALESCE(NULLIF(e.avatar_url, ''), u.avatar_url, '') AS avatar_url,
          u.role,
          e.department,
          COALESCE(e.field_unit, e.department) AS field_unit,

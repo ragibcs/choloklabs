@@ -17,7 +17,9 @@ import {
   Save,
   Sparkles,
   Trash2,
+  Upload,
 } from "lucide-react";
+import { resizeImageFile } from "@/lib/utils";
 
 interface ErpMember {
   id: string;
@@ -34,6 +36,7 @@ interface ErpMember {
   github_username: string;
   linkedin_url: string;
   bio: string;
+  avatar_url?: string;
   skills: string[];
   is_public_team: boolean;
   tree_order: number;
@@ -136,6 +139,7 @@ export default function ErpCommandPanel({
     githubUsername: "",
     linkedinUrl: "",
     bio: "",
+    avatarUrl: "",
     skillsText: "",
     isPublicTeam: true,
     treeOrder: 10,
@@ -231,6 +235,7 @@ export default function ErpCommandPanel({
       githubUsername: m.github_username || "",
       linkedinUrl: m.linkedin_url || "",
       bio: m.bio || "",
+      avatarUrl: m.avatar_url || "",
       skillsText: (m.skills || []).join(", "),
       isPublicTeam: m.is_public_team !== false,
       treeOrder: m.tree_order || 0,
@@ -256,6 +261,7 @@ export default function ErpCommandPanel({
             githubUsername: nodeForm.githubUsername,
             linkedinUrl: nodeForm.linkedinUrl,
             bio: nodeForm.bio,
+            avatarUrl: nodeForm.avatarUrl,
             skillsText: nodeForm.skillsText,
             isPublicTeam: nodeForm.isPublicTeam,
             treeOrder: Number(nodeForm.treeOrder || 0),
@@ -481,9 +487,22 @@ export default function ErpCommandPanel({
                   return (
                     <tr key={m.id}>
                       <td>
-                        <strong>{m.full_name}</strong>
-                        <div className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>
-                          {m.employee_code} · {m.job_title}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a1120", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {m.avatar_url ? (
+                              <img src={m.avatar_url} alt={m.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <span style={{ fontSize: 11, fontWeight: 750, color: "var(--signal)" }}>
+                                {m.full_name.slice(0, 2).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <strong>{m.full_name}</strong>
+                            <div className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>
+                              {m.employee_code} · {m.job_title}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td>
@@ -544,6 +563,90 @@ export default function ErpCommandPanel({
             </div>
 
             <div className="cl-form-grid">
+              {/* Member Photo / Avatar Upload Option */}
+              <div
+                className="cl-field full"
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  alignItems: "center",
+                  padding: "14px 16px",
+                  background: "rgba(255,255,255,0.03)",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "relative",
+                    width: 68,
+                    height: 68,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    background: "linear-gradient(135deg, rgba(94,242,200,0.2), rgba(56,189,248,0.2))",
+                    border: "2px solid rgba(94,242,200,0.4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {nodeForm.avatarUrl ? (
+                    <img
+                      src={nodeForm.avatarUrl}
+                      alt="Preview"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 22, fontWeight: 750, color: "var(--signal)" }}>
+                      {members.find((m) => m.id === editingMemberId)?.full_name?.slice(0, 2).toUpperCase() || "CL"}
+                    </span>
+                  )}
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: "var(--paper)" }}>
+                    Team Member Photo / Avatar
+                  </label>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <label
+                      className="cl-btn sm primary"
+                      style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Upload size={14} /> Upload Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const base64 = await resizeImageFile(file, 400, 400, 0.85);
+                            setNodeForm((prev) => ({ ...prev, avatarUrl: base64 }));
+                            onNotify("ok", "Photo selected and optimized for /team tree.");
+                          } catch {
+                            onNotify("err", "Could not process image file.");
+                          }
+                        }}
+                      />
+                    </label>
+                    {nodeForm.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setNodeForm((prev) => ({ ...prev, avatarUrl: "" }))}
+                        className="cl-btn sm outline"
+                        style={{ color: "#fca5a5", borderColor: "rgba(248,113,113,0.3)" }}
+                      >
+                        <Trash2 size={13} /> Remove Photo
+                      </button>
+                    )}
+                    <span style={{ fontSize: 12, color: "var(--mist-2)" }}>
+                      PNG, JPG, or WebP. Automatically resized and optimized for live display.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="cl-field">
                 <label>Reports To (Parent Node in Org Tree)</label>
                 <select

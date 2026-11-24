@@ -28,6 +28,7 @@ export async function GET() {
            COALESCE(e.skills, '[]'::jsonb) AS skills,
            COALESCE(e.is_public_team, TRUE) AS is_public_team,
            COALESCE(e.tree_order, 0) AS tree_order,
+           COALESCE(NULLIF(e.avatar_url, ''), u.avatar_url, '') AS avatar_url,
            u.full_name, u.email, u.role,
            (SELECT COUNT(*)::int FROM employee_commits c WHERE c.employee_id = e.id) AS commits_count,
            (SELECT COUNT(*)::int FROM employee_tasks t WHERE t.employee_id = e.id AND t.status = 'done') AS tasks_done_count,
@@ -314,6 +315,7 @@ export async function PATCH(req: Request) {
              skills = COALESCE($8::jsonb, skills),
              is_public_team = COALESCE($9, is_public_team),
              tree_order = COALESCE($10, tree_order),
+             avatar_url = COALESCE($12, avatar_url),
              updated_at = NOW()
          WHERE id = $11`,
         [
@@ -328,8 +330,15 @@ export async function PATCH(req: Request) {
           typeof d.isPublicTeam === "boolean" ? d.isPublicTeam : null,
           d.treeOrder !== undefined ? Number(d.treeOrder) : null,
           body.id,
+          d.avatarUrl !== undefined ? String(d.avatarUrl) : null,
         ]
       );
+      if (d.avatarUrl !== undefined) {
+        await query(
+          `UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = (SELECT user_id FROM employees WHERE id = $2)`,
+          [String(d.avatarUrl), body.id]
+        );
+      }
       await logAudit(actor.id, "erp.tree_node_updated", "employees", body.id);
       return NextResponse.json({ ok: true });
     }

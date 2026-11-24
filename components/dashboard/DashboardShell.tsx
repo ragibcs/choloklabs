@@ -21,10 +21,13 @@ import {
   Search,
   Sparkles,
   Users,
+  Upload,
+  Trash2,
   X,
   type LucideIcon,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/auth";
+import { resizeImageFile } from "@/lib/utils";
 
 export interface NavItem {
   id: string;
@@ -98,6 +101,7 @@ export default function DashboardShell({
   const [profileForm, setProfileForm] = useState({
     fullName: user.fullName,
     phone: user.phone || "",
+    avatarUrl: user.avatarUrl || "",
     currentPassword: "",
     newPassword: "",
   });
@@ -204,6 +208,7 @@ export default function DashboardShell({
         body: JSON.stringify({
           fullName: profileForm.fullName,
           phone: profileForm.phone,
+          avatarUrl: profileForm.avatarUrl,
           ...(profileForm.newPassword
             ? {
                 currentPassword: profileForm.currentPassword,
@@ -370,7 +375,17 @@ export default function DashboardShell({
             }}
             title="Account & Password Settings"
           >
-            <div className="cl-avatar">{initials || "CL"}</div>
+            <div className="cl-avatar" style={{ overflow: "hidden", padding: 0 }}>
+              {(profileForm.avatarUrl || user.avatarUrl) ? (
+                <img
+                  src={profileForm.avatarUrl || user.avatarUrl}
+                  alt={user.fullName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                initials || "CL"
+              )}
+            </div>
             <div className="cl-user-meta">
               <strong>{user.fullName}</strong>
               <span>{user.email}</span>
@@ -795,6 +810,50 @@ export default function DashboardShell({
             )}
 
             <form onSubmit={saveAccount} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Profile Photo / Avatar Upload */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg, rgba(94,242,200,0.2), rgba(56,189,248,0.2))", border: "2px solid rgba(94,242,200,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {profileForm.avatarUrl ? (
+                    <img src={profileForm.avatarUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "var(--signal)" }}>{initials || "CL"}</span>
+                  )}
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--paper)" }}>Profile Photo</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <label className="cl-btn sm primary" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, padding: "4px 10px" }}>
+                      <Upload size={12} /> Upload Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const base64 = await resizeImageFile(file, 400, 400, 0.85);
+                            setProfileForm((prev) => ({ ...prev, avatarUrl: base64 }));
+                          } catch {
+                            setAccountMsg({ type: "err", text: "Could not process image file." });
+                          }
+                        }}
+                      />
+                    </label>
+                    {profileForm.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setProfileForm((prev) => ({ ...prev, avatarUrl: "" }))}
+                        className="cl-btn sm outline"
+                        style={{ color: "#fca5a5", borderColor: "rgba(248,113,113,0.3)", padding: "4px 8px", fontSize: 12 }}
+                      >
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="cl-label" style={{ fontSize: 12 }}>Full Name</label>
                 <input

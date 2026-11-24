@@ -651,6 +651,7 @@ async function runMigrationsAndSeed() {
     ALTER TABLE employees ADD COLUMN IF NOT EXISTS skills JSONB NOT NULL DEFAULT '[]'::jsonb;
     ALTER TABLE employees ADD COLUMN IF NOT EXISTS is_public_team BOOLEAN NOT NULL DEFAULT TRUE;
     ALTER TABLE employees ADD COLUMN IF NOT EXISTS tree_order INT NOT NULL DEFAULT 0;
+    ALTER TABLE employees ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
     UPDATE employees SET salary_monthly = COALESCE(base_salary, 0) WHERE salary_monthly = 0 AND base_salary > 0;
     UPDATE employees SET annual_leave_balance = COALESCE(leave_balance_days, 18) WHERE annual_leave_balance = 18 AND leave_balance_days IS NOT NULL;
 
