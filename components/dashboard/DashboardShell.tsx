@@ -91,6 +91,7 @@ export default function DashboardShell({
 
   // Notification Center State
   const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -106,6 +107,21 @@ export default function DashboardShell({
     newPassword: "",
   });
 
+  // Close notification drawer when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    if (notifOpen) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [notifOpen]);
+
   // Global Keyboard shortcut listener for Cmd/Ctrl + K and window resize
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,7 +135,7 @@ export default function DashboardShell({
       }
     };
     const handleResize = () => {
-      if (window.innerWidth > 960) {
+      if (window.innerWidth > 1024) {
         setSidebarOpen(false);
       }
     };
@@ -418,159 +434,84 @@ export default function DashboardShell({
             >
               <Menu size={16} />
             </button>
-            <div>
-              <div className="eyebrow" style={{ color: "var(--signal-deep)", marginBottom: 3 }}>
-                <i style={{ background: "var(--signal-deep)" }} />
+            <div className="cl-topbar-headings">
+              <div className="cl-topbar-eyebrow">
+                <i className="cl-pulse-dot-sm" />
                 {roleLabel} COMMAND CENTER
               </div>
               <AnimatePresence mode="wait">
                 <motion.h1
                   key={title}
-                  initial={{ opacity: 0, y: 5 }}
+                  className="cl-topbar-title"
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
                 >
                   {title}
                 </motion.h1>
               </AnimatePresence>
-              {subtitle && <div className="cl-topbar-sub">{subtitle}</div>}
+              {subtitle && (
+                <div className="cl-topbar-sub" title={subtitle}>
+                  {subtitle}
+                </div>
+              )}
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div className="cl-topbar-right">
             {/* Universal Command Palette Trigger */}
             <button
               type="button"
+              className="cl-topbar-search-btn"
               onClick={() => setCmdOpen(true)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: "rgba(15,23,42,0.85)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 10,
-                padding: "6px 14px",
-                color: "#94a3b8",
-                fontSize: 13,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(94,242,200,0.5)";
-                e.currentTarget.style.color = "#ffffff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
-                e.currentTarget.style.color = "#94a3b8";
-              }}
+              title="Open Command Palette (⌘K)"
             >
-              <Search size={14} />
-              <span>Search...</span>
-              <kbd
-                style={{
-                  background: "rgba(255,255,255,0.08)",
-                  padding: "2px 6px",
-                  borderRadius: 4,
-                  fontSize: 11,
-                  fontFamily: "monospace",
-                }}
-              >
-                ⌘K
-              </kbd>
+              <Search size={14} className="cl-search-icon" />
+              <span className="cl-search-text">Search OS...</span>
+              <kbd className="cl-search-kbd">⌘K</kbd>
             </button>
 
             {/* Notification Bell with Badge */}
-            <div style={{ position: "relative" }}>
+            <div ref={notifRef} className="cl-topbar-notif-wrap">
               <button
                 type="button"
+                className={`cl-topbar-icon-btn ${notifOpen ? "active" : ""}`}
                 onClick={() => setNotifOpen((prev) => !prev)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: notifOpen ? "rgba(94,242,200,0.15)" : "rgba(15,23,42,0.85)",
-                  border: notifOpen ? "1px solid rgba(94,242,200,0.4)" : "1px solid rgba(255,255,255,0.12)",
-                  color: notifOpen ? "#5ef2c8" : "#94a3b8",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  position: "relative",
-                  transition: "all 0.15s ease",
-                }}
                 title="Notification Center"
               >
                 <Bell size={16} />
-                {unreadCount > 0 && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "#f97316",
-                      boxShadow: "0 0 8px #f97316",
-                    }}
-                  />
-                )}
+                {unreadCount > 0 && <span className="cl-notif-badge-dot" />}
               </button>
 
               {/* Notification Dropdown Drawer */}
               {notifOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 8px)",
-                    right: 0,
-                    width: "min(380px, 92vw)",
-                    background: "#0a1120",
-                    border: "1px solid rgba(56,189,248,0.25)",
-                    borderRadius: 16,
-                    boxShadow: "0 20px 40px -10px rgba(0,0,0,0.7)",
-                    zIndex: 1000,
-                    padding: 16,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff" }}>
-                      Notifications {unreadCount > 0 && `(${unreadCount})`}
+                <div className="cl-notif-dropdown">
+                  <div className="cl-notif-header">
+                    <div className="cl-notif-title">
+                      Notifications {unreadCount > 0 && <span className="cl-notif-count">({unreadCount})</span>}
                     </div>
                     {unreadCount > 0 && (
                       <button
+                        type="button"
                         onClick={markAllNotificationsRead}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: "#5ef2c8",
-                          fontSize: 12,
-                          cursor: "pointer",
-                          fontWeight: 600,
-                        }}
+                        className="cl-notif-mark-read"
                       >
-                        Mark all as read
+                        Mark all read
                       </button>
                     )}
                   </div>
 
-                  <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="cl-notif-list">
                     {notifications.length === 0 ? (
-                      <div style={{ padding: "20px 0", textAlign: "center", color: "#64748b", fontSize: 13 }}>
-                        No new notifications.
+                      <div className="cl-notif-empty">
+                        No notifications right now.
                       </div>
                     ) : (
                       notifications.map((n) => (
                         <div
                           key={n.id}
-                          style={{
-                            background: n.is_read ? "rgba(255,255,255,0.02)" : "rgba(56,189,248,0.08)",
-                            border: n.is_read ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(56,189,248,0.25)",
-                            borderRadius: 10,
-                            padding: "10px 12px",
-                            cursor: n.link_url ? "pointer" : "default",
-                          }}
+                          className={`cl-notif-item ${n.is_read ? "read" : "unread"}`}
                           onClick={() => {
                             if (n.link_url) {
                               setNotifOpen(false);
@@ -578,11 +519,16 @@ export default function DashboardShell({
                             }
                           }}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "#ffffff" }}>{n.title}</span>
-                            <span style={{ fontSize: 10, color: "#64748b" }}>{new Date(n.created_at).toLocaleDateString()}</span>
+                          <div className="cl-notif-item-top">
+                            <span className="cl-notif-item-title">{n.title}</span>
+                            <span className="cl-notif-item-time">
+                              {new Date(n.created_at).toLocaleDateString([], {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
                           </div>
-                          <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.4 }}>{n.message}</div>
+                          <div className="cl-notif-item-msg">{n.message}</div>
                         </div>
                       ))
                     )}
@@ -595,7 +541,7 @@ export default function DashboardShell({
               <Calendar size={13} />
               {todayLabel}
             </span>
-            {headerActions}
+            {headerActions && <div className="cl-topbar-custom-actions">{headerActions}</div>}
           </div>
         </header>
 
